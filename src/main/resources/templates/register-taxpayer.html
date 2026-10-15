@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org">
+<head th:replace="~{fragments :: head('Register Taxpayer')}"></head>
+<body class="page-register">
+
+<header th:replace="~{fragments :: header(${activePage})}"></header>
+
+<main class="container narrow">
+    <h1>Register Taxpayer</h1>
+    <p class="subtitle">Create a mock taxpayer profile before sending invoices.</p>
+
+    <div class="alert alert-error" th:if="${error}" th:text="${error}"></div>
+
+    <form class="card form" th:action="@{/taxpayers/register}" method="post">
+        <label for="pin">KRA PIN</label>
+        <input type="text" id="pin" name="pin" placeholder="A112233445Z"
+               maxlength="11" th:value="${pin}" required>
+        <small class="hint">11 characters: A or P, then 9 digits, then a letter. Example: A112233445Z.</small>
+        <label for="companyName">Company Name</label>
+        <input type="text" id="companyName" name="companyName"
+               placeholder="Nairobi Tech Supplies LTD" th:value="${companyName}" required>
+
+        <label for="email">Email</label>
+        <input type="email" id="email" name="email"
+               placeholder="finance@nairobitech.co.ke" th:value="${email}" required>
+
+        <button type="submit" class="btn btn-primary">Register Taxpayer</button>
+    </form>
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

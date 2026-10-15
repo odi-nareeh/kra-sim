@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('Officer Sign In')}"></head>
+<body class="page-login">
+
+<main class="login-wrap" id="main-content">
+    <div class="login-card">
+        <div class="login-brand">
+            <span class="brand-mark"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
+            <div>
+                <strong>KRA-Sim</strong>
+                <small>Micro-Tax E-Invoicing &amp; Compliance</small>
+            </div>
+        </div>
+
+        <h1>Compliance Officer Sign In</h1>
+        <p class="subtitle">Sign in to view taxpayer VAT ledgers.</p>
+
+        <div class="alert alert-error" th:if="${param.error}" role="alert">
+            <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+            <span>Incorrect username or password.</span>
+        </div>
+        <div class="alert alert-error" th:if="${param.locked}" role="alert">
+            <i class="bi bi-lock-fill" aria-hidden="true"></i>
+            <span>Too many failed attempts. Sign-in is temporarily blocked. Try again in 15 minutes.</span>
+        </div>
+        <div class="alert alert-success" th:if="${param.logout}" role="status">
+            <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+            <span>You have been signed out.</span>
+        </div>
+
+        <form class="form" th:action="@{/login}" method="post">
+            <label for="username">Username</label>
+            <input type="text" id="username" name="username" autocomplete="username"
+                   autocapitalize="none" spellcheck="false" required autofocus>
+
+            <label for="password">Password</label>
+            <input type="password" id="password" name="password" autocomplete="current-password" required>
+
+            <button type="submit" class="btn btn-primary">Sign in</button>
+        </form>
+
+        <p class="login-note">
+            <i class="bi bi-info-circle" aria-hidden="true"></i>
+            Portfolio simulation with demonstration data. Not a live KRA system.
+        </p>
+    </div>
+</main>
+
+</body>
+</html>

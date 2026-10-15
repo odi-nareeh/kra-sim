@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('POS Devices')}"></head>
+<body>
+
+<header th:replace="~{fragments :: header(${activePage})}"></header>
+
+<main class="container" id="main-content">
+    <h1>POS Devices</h1>
+    <p class="subtitle">Register eTIMS devices and manage the API keys they use to submit invoices.</p>
+
+    <div class="alert alert-success" th:if="${success}" role="status">
+        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        <span th:text="${success}"></span>
+    </div>
+    <div class="alert alert-error" th:if="${error}" role="alert">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <span th:text="${error}"></span>
+    </div>
+
+    <!-- One-time key reveal -->
+    <div class="card key-card" th:if="${newKey}" role="alert">
+        <h2><i class="bi bi-key" aria-hidden="true"></i> API key for <span th:text="${newKeySerial}">SCU000001</span></h2>
+        <p>Copy this key now. It is stored only as a hash, so it <strong>cannot be shown again</strong>.</p>
+        <div class="key-row">
+            <code class="key-box" id="newKeyValue" th:text="${newKey}">kra_...</code>
+            <button type="button" class="btn btn-secondary" data-copy-target="newKeyValue">Copy</button>
+        </div>
+    </div>
+
+    <!-- Register -->
+    <form class="card form device-form" th:action="@{/devices}" method="post">
+        <h2><i class="bi bi-plus-circle" aria-hidden="true"></i> Register a device</h2>
+        <label for="deviceName">Device name</label>
+        <input type="text" id="deviceName" name="deviceName" maxlength="100"
+               placeholder="e.g. Westlands Branch Till 1" required>
+        <button type="submit" class="btn btn-primary">Register and generate key</button>
+    </form>
+
+    <!-- Device list -->
+    <div class="card">
+        <h2 class="section-title"><i class="bi bi-hdd-network" aria-hidden="true"></i> Registered devices</h2>
+
+        <p class="empty" th:if="${#lists.isEmpty(devices)}">No devices registered yet.</p>
+
+        <div class="table-wrap" th:unless="${#lists.isEmpty(devices)}"
+             role="region" aria-label="Registered POS devices" tabindex="0">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th scope="col">Serial</th>
+                    <th scope="col">Name</th>
+                    <th scope="col">Key</th>
+                    <th scope="col">Status</th>
+                    <th scope="col">Last used</th>
+                    <th scope="col">Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="d : ${devices}">
+                    <td><span class="inv-id" th:text="${d.serial}">SCU000001</span></td>
+                    <td th:text="${d.name}">Till 1</td>
+                    <td><code th:text="'kra_' + ${d.keyPrefix} + '…'">kra_a1b2c3d4…</code></td>
+                    <td>
+                        <span class="badge badge-ok" th:if="${d.active}">
+                            <i class="bi bi-check-circle" aria-hidden="true"></i> Active
+                        </span>
+                        <span class="badge badge-error" th:unless="${d.active}">
+                            <i class="bi bi-slash-circle" aria-hidden="true"></i> Revoked
+                        </span>
+                    </td>
+                    <td th:text="${d.lastUsedAt != null} ? ${#temporals.format(d.lastUsedAt, 'dd MMM yyyy, HH:mm')} : 'Never'">Never</td>
+                    <td>
+                        <div class="actions" th:if="${d.active}">
+                            <form class="inline-form" method="post"
+                                  th:action="@{/devices/{id}/rotate(id=${d.id})}"
+                                  onsubmit="return confirm('Rotate this key? The current key stops working immediately.');">
+                                <button type="submit" class="btn btn-secondary btn-sm">Rotate key</button>
+                            </form>
+                            <form class="inline-form" method="post"
+                                  th:action="@{/devices/{id}/revoke(id=${d.id})}"
+                                  onsubmit="return confirm('Revoke this device permanently?');">
+                                <button type="submit" class="btn btn-danger btn-sm">Revoke</button>
+                            </form>
+                        </div>
+                        <span class="hint" th:unless="${d.active}">No actions available</span>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

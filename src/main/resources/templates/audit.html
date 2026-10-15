@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('Audit Log')}"></head>
+<body>
+
+<header th:replace="~{fragments :: header(${activePage})}"></header>
+
+<main class="container" id="main-content">
+    <h1>Audit Log</h1>
+    <p class="subtitle">The 100 most recent security and administration events. Records cannot be edited or deleted.</p>
+
+    <form class="card filter-row" th:action="@{/audit}" method="get">
+        <label for="action">Filter by action</label>
+        <select id="action" name="action">
+            <option value="">All actions</option>
+            <option th:each="a : ${actions}" th:value="${a.name()}"
+                    th:text="${#strings.replace(a.name(), '_', ' ')}"
+                    th:selected="${a == selected}">LOGIN FAILURE</option>
+        </select>
+        <button type="submit" class="btn btn-secondary btn-sm">Apply</button>
+    </form>
+
+    <div class="card">
+        <h2 class="section-title"><i class="bi bi-journal-text" aria-hidden="true"></i> Events</h2>
+
+        <p class="empty" th:if="${#lists.isEmpty(events)}">No events recorded yet.</p>
+
+        <div class="table-wrap" th:unless="${#lists.isEmpty(events)}"
+             role="region" aria-label="Audit events" tabindex="0">
+            <table class="data-table">
+                <thead>
+                <tr>
+                    <th scope="col">Time</th>
+                    <th scope="col">Actor</th>
+                    <th scope="col">Action</th>
+                    <th scope="col">Target</th>
+                    <th scope="col">Details</th>
+                    <th scope="col">IP address</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="e : ${events}">
+                    <td th:text="${#temporals.format(e.occurredAt, 'dd MMM yyyy, HH:mm:ss')}">time</td>
+                    <td th:text="${e.actor}">officer</td>
+                    <td>
+                        <span th:class="${e.action == 'LOGIN_FAILURE' or e.action == 'LOGIN_BLOCKED' or e.action == 'DEVICE_REVOKED'}
+                                        ? 'badge badge-error'
+                                        : (${e.action == 'LOGIN_SUCCESS'} ? 'badge badge-ok' : 'badge badge-neutral')"
+                              th:text="${#strings.replace(e.action, '_', ' ')}">LOGIN SUCCESS</span>
+                    </td>
+                    <td th:text="${e.target} ?: '-'">-</td>
+                    <td class="audit-details" th:text="${e.details} ?: '-'">-</td>
+                    <td th:text="${e.sourceIp} ?: '-'">-</td>
+                </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>

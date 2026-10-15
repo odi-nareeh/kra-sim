@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+<head th:replace="~{fragments :: head('Compliance Dashboard')}"></head>
+<body class="page-dashboard">
+
+<header th:replace="~{fragments :: header(${activePage})}"></header>
+
+<!-- Short Nairobi banner: heading and search only, no financial data on the photo -->
+<section class="hero" aria-labelledby="page-title">
+    <div class="hero-inner">
+        <span class="hero-tag"><i class="bi bi-bank2" aria-hidden="true"></i> Compliance Officer Portal</span>
+        <h1 id="page-title">Taxpayer VAT Compliance Dashboard</h1>
+        <p>View taxpayer profiles, invoice activity, and VAT liabilities in one place.</p>
+
+        <form class="search-card" id="pinSearchForm" th:action="@{/dashboard}" method="get" novalidate>
+            <label for="pin">Enter taxpayer KRA PIN</label>
+            <div class="search-row">
+                <div class="search-field">
+                    <i class="bi bi-search" aria-hidden="true"></i>
+                    <input type="text" id="pin" name="pin" placeholder="e.g. A112233445Z"
+                           maxlength="11" th:value="${pin}" autocomplete="off" autocapitalize="characters"
+                           spellcheck="false" required aria-describedby="pin-hint pin-error">
+                </div>
+                <button type="submit" class="btn btn-primary" id="searchBtn">
+                    <span class="btn-label">Search</span>
+                </button>
+            </div>
+            <p class="field-error" id="pin-error" role="alert" hidden></p>
+            <p class="hint" id="pin-hint">
+                A KRA PIN has 11 characters: <strong>A or P</strong>, then <strong>9 digits</strong>,
+                then <strong>a letter</strong>. Example: A112233445Z.<br>
+                Demo PIN with data: <strong>A000111222B</strong>. All records are simulated.
+            </p>
+        </form>
+    </div>
+</section>
+
+<main class="container" id="main-content">
+
+    <!-- Flash message after registration -->
+    <div class="alert alert-success" th:if="${success}" role="status">
+        <i class="bi bi-check-circle-fill" aria-hidden="true"></i>
+        <span th:text="${success}"></span>
+    </div>
+
+    <!-- Landing state: nothing searched yet -->
+    <div class="card empty-state" th:unless="${searched}">
+        <i class="bi bi-search" aria-hidden="true"></i>
+        <h2>Search a taxpayer to begin</h2>
+        <p>Results appear here: company profile, invoice count and the outstanding VAT liability from the ledger.</p>
+    </div>
+
+    <!-- Not found -->
+    <div class="alert alert-error" th:if="${searched and taxpayer == null}" role="alert">
+        <i class="bi bi-exclamation-triangle-fill" aria-hidden="true"></i>
+        <span>
+            No taxpayer found for PIN <strong th:text="${pin}"></strong>.
+            <a th:href="@{/taxpayers/register}">Register this taxpayer</a>
+        </span>
+    </div>
+
+    <!-- Result -->
+    <section th:if="${taxpayer != null}" aria-label="Taxpayer results">
+
+        <!-- Profile -->
+        <div class="card profile-card">
+            <div class="avatar" aria-hidden="true" th:text="${#strings.substring(taxpayer.companyName(), 0, 1)}">N</div>
+            <div class="profile-info">
+                <h2 th:text="${taxpayer.companyName()}">Company</h2>
+                <ul class="profile-meta">
+                    <li><i class="bi bi-card-text" aria-hidden="true"></i>
+                        <span class="sr-only">KRA PIN:</span>
+                        <span th:text="${taxpayer.pin()}">A000000000X</span></li>
+                    <li><i class="bi bi-envelope" aria-hidden="true"></i>
+                        <span class="sr-only">Email:</span>
+                        <span th:text="${taxpayer.email()}">email</span></li>
+                </ul>
+            </div>
+
+            <!-- Describes the ledger balance only; it does not claim a compliance verdict -->
+            <span class="badge badge-warn" th:if="${ledger.totalVatDue().signum() > 0}">
+                <i class="bi bi-hourglass-split" aria-hidden="true"></i> VAT balance outstanding
+            </span>
+            <span class="badge badge-neutral" th:unless="${ledger.totalVatDue().signum() > 0}">
+                <i class="bi bi-dash-circle" aria-hidden="true"></i> No VAT balance
+            </span>
+        </div>
+
+        <!-- KPI cards -->
+        <div class="stats">
+            <div class="card stat">
+                <div class="stat-icon"><i class="bi bi-receipt-cutoff" aria-hidden="true"></i></div>
+                <div>
+                    <span class="stat-label">Invoices Submitted</span>
+                    <span class="stat-value" th:text="${invoiceCount}">0</span>
+                </div>
+            </div>
+
+            <div class="card stat">
+                <div class="stat-icon"><i class="bi bi-wallet2" aria-hidden="true"></i></div>
+                <div>
+                    <span class="stat-label">Outstanding VAT Liability</span>
+                    <span class="stat-value">
+                        KSh <span th:text="${#numbers.formatDecimal(ledger.totalVatDue(), 1, 'COMMA', 2, 'POINT')}">0.00</span>
+                    </span>
+                    <span class="stat-note">
+                        Last updated
+                        <span th:text="${#temporals.format(ledger.lastUpdated(), 'dd MMM yyyy, HH:mm:ss')}"></span>
+                    </span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Invoice table -->
+        <div class="card">
+            <h2 class="section-title"><i class="bi bi-list-ul" aria-hidden="true"></i> Recent Invoices</h2>
+
+            <p class="empty" th:if="${#lists.isEmpty(recentInvoices)}">No invoices submitted yet.</p>
+
+        <div class="table-wrap" th:unless="${#lists.isEmpty(recentInvoices)}"
+             role="region" aria-label="Recent invoices table" tabindex="0">
+             <table class="data-table">
+             <caption class="sr-only">Most recent invoices for this taxpayer, newest first</caption>
+             <thead>
+             <tr>
+                <th scope="col">Control Unit Invoice No.</th>
+                <th scope="col">Device</th>
+                <th scope="col" class="num">Amount (excl. VAT)</th>
+                <th scope="col" class="num">VAT (16%)</th>
+                <th scope="col" class="num">Total</th>
+                <th scope="col">Date</th>
+             </tr>
+             </thead>
+             <tbody>
+                    <tr th:each="inv : ${recentInvoices}">
+                        <td><span class="inv-id" th:text="${inv.controlUnitInvoiceNo()}"
+                                  th:title="${inv.controlUnitInvoiceNo()}">SCU000001/000001</span></td>
+                        <td th:text="${inv.deviceSerial() ?: 'Before auditing'}">SCU000001</td>
+                        <td class="num" th:text="${#numbers.formatDecimal(inv.amountBeforeTax(), 1, 'COMMA', 2, 'POINT')}">0</td>
+                        <td class="num" th:text="${#numbers.formatDecimal(inv.vatAmount(), 1, 'COMMA', 2, 'POINT')}">0</td>
+                        <td class="num" th:text="${#numbers.formatDecimal(inv.totalAmount(), 1, 'COMMA', 2, 'POINT')}">0</td>
+                        <td th:text="${#temporals.format(inv.createdAt(), 'dd MMM yyyy, HH:mm')}">date</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+                    <tr th:each="inv : ${recentInvoices}">
+                        <td><span class="inv-id" th:text="'#' + ${inv.id()}">#1</span></td>
+                        <td class="num" th:text="${#numbers.formatDecimal(inv.amountBeforeTax(), 1, 'COMMA', 2, 'POINT')}">0</td>
+                        <td class="num" th:text="${#numbers.formatDecimal(inv.vatAmount(), 1, 'COMMA', 2, 'POINT')}">0</td>
+                        <td class="num" th:text="${#numbers.formatDecimal(inv.totalAmount(), 1, 'COMMA', 2, 'POINT')}">0</td>
+                        <td th:text="${#temporals.format(inv.createdAt(), 'dd MMM yyyy, HH:mm')}">date</td>
+                    </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </section>
+</main>
+
+<footer th:replace="~{fragments :: footer}"></footer>
+</body>
+</html>
