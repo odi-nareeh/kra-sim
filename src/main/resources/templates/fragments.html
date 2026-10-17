@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html xmlns:th="http://www.thymeleaf.org" xmlns:sec="http://www.thymeleaf.org/extras/spring-security">
+
 <head th:fragment="head(title)">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -14,65 +15,76 @@
     <link rel="stylesheet" th:href="@{/css/style.css}">
     <script th:src="@{/js/app.js}" defer></script>
 </head>
+
 <body>
 
-<header th:fragment="header(active)" class="site-header">
-    <a class="skip-link" href="#main-content">Skip to main content</a>
-    <div class="header-inner">
-        <div class="brand">
-            <span class="brand-mark"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
-            <div>
-                <strong>KRA-Sim</strong>
-                <small>Micro-Tax E-Invoicing &amp; Compliance</small>
+    <header th:fragment="header(active)" class="site-header">
+        <a class="skip-link" href="#main-content">Skip to main content</a>
+        <div class="header-inner">
+            <div class="brand">
+                <span class="brand-mark"><i class="bi bi-shield-check" aria-hidden="true"></i></span>
+                <div>
+                    <strong>KRA-Sim</strong>
+                    <small>Micro-Tax E-Invoicing &amp; Compliance</small>
+                </div>
             </div>
+
+            <button type="button" class="nav-toggle" id="navToggle" aria-expanded="false" aria-controls="mainNav">
+                <i class="bi bi-list" aria-hidden="true"></i> Menu
+            </button>
+
+            <nav class="main-nav" id="mainNav" aria-label="Main navigation">
+                <!-- Officer links -->
+                <a sec:authorize="hasRole('OFFICER')" th:href="@{/dashboard}"
+                    th:classappend="${active == 'dashboard'} ? 'active'"
+                    th:attr="aria-current=${active == 'dashboard'} ? 'page'">
+                    <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
+                </a>
+                <a sec:authorize="hasRole('OFFICER')" th:href="@{/taxpayers/register}"
+                    th:classappend="${active == 'register'} ? 'active'"
+                    th:attr="aria-current=${active == 'register'} ? 'page'">
+                    <i class="bi bi-person-plus" aria-hidden="true"></i> Register Taxpayer
+                </a>
+                <a sec:authorize="hasRole('OFFICER')" th:href="@{/invoices/new}"
+                    th:classappend="${active == 'invoice'} ? 'active'"
+                    th:attr="aria-current=${active == 'invoice'} ? 'page'">
+                    <i class="bi bi-receipt" aria-hidden="true"></i> eTIMS POS
+                </a>
+                <a sec:authorize="hasRole('OFFICER')" th:href="@{/devices}"
+                    th:classappend="${active == 'devices'} ? 'active'"
+                    th:attr="aria-current=${active == 'devices'} ? 'page'">
+                    <i class="bi bi-cpu" aria-hidden="true"></i> Devices
+                </a>
+
+                <!-- Auditor link -->
+                <a sec:authorize="hasRole('AUDITOR')" th:href="@{/audit}"
+                    th:classappend="${active == 'audit'} ? 'active'"
+                    th:attr="aria-current=${active == 'audit'} ? 'page'">
+                    <i class="bi bi-journal-text" aria-hidden="true"></i> Audit Log
+                </a>
+
+                <div class="nav-user" sec:authorize="isAuthenticated()">
+                    <span class="user-chip">
+                        <i class="bi bi-person-circle" aria-hidden="true"></i>
+                        <span class="sr-only">Signed in as</span>
+                        <span sec:authentication="name">officer</span>
+                    </span>
+                    <form th:action="@{/logout}" method="post">
+                        <button type="submit" class="nav-logout">
+                            <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sign out
+                        </button>
+                    </form>
+                </div>
+            </nav>
         </div>
+    </header>
 
-        <button type="button" class="nav-toggle" id="navToggle"
-                aria-expanded="false" aria-controls="mainNav">
-            <i class="bi bi-list" aria-hidden="true"></i> Menu
-        </button>
-
-        <nav class="main-nav" id="mainNav" aria-label="Main navigation">
-            <a th:href="@{/dashboard}" th:classappend="${active == 'dashboard'} ? 'active'"
-               th:attr="aria-current=${active == 'dashboard'} ? 'page'">
-                <i class="bi bi-speedometer2" aria-hidden="true"></i> Dashboard
-            </a>
-            <a th:href="@{/taxpayers/register}" th:classappend="${active == 'register'} ? 'active'"
-               th:attr="aria-current=${active == 'register'} ? 'page'">
-                <i class="bi bi-person-plus" aria-hidden="true"></i> Register Taxpayer
-            </a>
-            <a th:href="@{/invoices/new}" th:classappend="${active == 'invoice'} ? 'active'"
-               th:attr="aria-current=${active == 'invoice'} ? 'page'">
-                <i class="bi bi-receipt" aria-hidden="true"></i> eTIMS POS
-            </a>
-            <a th:href="@{/devices}" th:classappend="${active == 'devices'} ? 'active'"
-               th:attr="aria-current=${active == 'devices'} ? 'page'">
-                <i class="bi bi-cpu" aria-hidden="true"></i> Devices
-            </a>
-            <a th:href="@{/audit}" th:classappend="${active == 'audit'} ? 'active'"
-                th:attr="aria-current=${active == 'audit'} ? 'page'">
-                <i class="bi bi-journal-text" aria-hidden="true"></i> Audit Log
-            </a>
-            <div class="nav-user">
-                <span class="user-chip">
-                    <i class="bi bi-person-circle" aria-hidden="true"></i>
-                    <span class="sr-only">Signed in as</span>
-                    <span sec:authentication="name">officer</span>
-                </span>
-                <form th:action="@{/logout}" method="post">
-                    <button type="submit" class="nav-logout">
-                        <i class="bi bi-box-arrow-right" aria-hidden="true"></i> Sign out
-                    </button>
-                </form>
-            </div>
-        </nav>
-    </div>
-</header>
-
-<footer th:fragment="footer" class="site-footer">
-    <i class="bi bi-info-circle" aria-hidden="true"></i>
-    KRA-Sim is a portfolio simulation using demonstration data. It is not a live KRA system and is not affiliated with the Kenya Revenue Authority.
-</footer>
+    <footer th:fragment="footer" class="site-footer">
+        <i class="bi bi-info-circle" aria-hidden="true"></i>
+        KRA-Sim is a portfolio simulation using demonstration data. It is not a live KRA system and is not affiliated
+        with the Kenya Revenue Authority.
+    </footer>
 
 </body>
+
 </html>

@@ -13,6 +13,7 @@ import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
 @Configuration
@@ -25,10 +26,8 @@ public class SecurityConfig {
     }
 
     /**
-     * Chain 1: the POS API. Stateless, per-device API key, no login page, no
-     * cookies.
-     * CSRF is disabled because there is no browser session to attack; the key is
-     * the credential.
+     * Chain 1: the POS API. Stateless, per-device API key, no login page, no cookies.
+     * CSRF is disabled because there is no browser session to attack; the key is the credential.
      */
     @Bean
     @Order(1)
@@ -47,23 +46,22 @@ public class SecurityConfig {
         return http.build();
     }
 
-    /**
-     * Chain 2: the web pages. Form login with throttling and auditing, CSRF
-     * protection on.
-     */
+    /** Chain 2: the web pages. Form login with throttling and auditing, role-based access, CSRF on. */
     @Bean
     @Order(2)
     public SecurityFilterChain webChain(HttpSecurity http,
-            LoginAttemptService attempts,
-            AuditService audit) throws Exception {
+                                        LoginAttemptService attempts,
+                                        AuditService audit) throws Exception {
         http
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/login", "/error", "/css/**", "/js/**", "/images/**").permitAll()
+                        .requestMatchers("/").authenticated()                   // redirects each role to its home
+                        .requestMatchers("/audit", "/audit/**").hasRole("AUDITOR")
                         .anyRequest().hasRole("OFFICER"))
                 .addFilterBefore(new LoginThrottleFilter(attempts, audit), UsernamePasswordAuthenticationFilter.class)
                 .formLogin(form -> form
                         .loginPage("/login")
-                        .defaultSuccessUrl("/dashboard")
+                        .successHandler(homeByRole())
                         .failureUrl("/login?error")
                         .permitAll())
                 .logout(logout -> logout
@@ -76,5 +74,14 @@ public class SecurityConfig {
                         .logoutSuccessUrl("/login?logout")
                         .permitAll());
         return http.build();
+    }
+
+    /** Auditors land on the audit log, officers on the dashboard. */
+    private static AuthenticationSuccessHandler homeByRole() {
+        return (request, response, authentication) -> {
+            boolean auditor = authentication.getAuthorities().stream()
+                    .anyMatch(a -> "ROLE_AUDITOR".equals(a.getAuthority()));
+            response.sendRedirect(request.getContextPath() + (auditor ? "/audit" : "/dashboard"));
+        };
     }
 }

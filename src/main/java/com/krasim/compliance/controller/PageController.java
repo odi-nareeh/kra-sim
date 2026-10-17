@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.Authentication;
 
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -27,8 +28,10 @@ public class PageController {
     }
 
     @GetMapping("/")
-    public String home() {
-        return "redirect:/dashboard";
+    public String home(Authentication authentication) {
+        boolean auditor = authentication != null && authentication.getAuthorities().stream()
+                .anyMatch(a -> "ROLE_AUDITOR".equals(a.getAuthority()));
+        return auditor ? "redirect:/audit" : "redirect:/dashboard";
     }
 
     // ---------- Compliance dashboard ----------

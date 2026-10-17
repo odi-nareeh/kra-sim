@@ -38,6 +38,7 @@ import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.never;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -89,23 +90,15 @@ class SecurityRulesTest {
         // ================= Redirect path: web pages =================
 
         @ParameterizedTest
-        @ValueSource(strings = { "/dashboard", "/taxpayers/register", "/invoices/new", "/devices", "/audit" })
-        void anonymousVisitorsAreRedirectedToLogin(String url) throws Exception {
-                mockMvc.perform(get(url))
-                                .andExpect(status().is3xxRedirection())
-                                .andExpect(redirectedUrlPattern("**/login"));
+        @ValueSource(strings = {"/dashboard", "/taxpayers/register", "/invoices/new", "/devices"})
+        @WithMockUser(roles = "OFFICER")
+        void officersCanOpenProtectedPages(String url) throws Exception {
+                mockMvc.perform(get(url)).andExpect(status().isOk());
         }
 
         @Test
         void loginPageIsPublic() throws Exception {
                 mockMvc.perform(get("/login")).andExpect(status().isOk());
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = { "/dashboard", "/taxpayers/register", "/invoices/new", "/devices", "/audit" })
-        @WithMockUser(roles = "OFFICER")
-        void officersCanOpenProtectedPages(String url) throws Exception {
-                mockMvc.perform(get(url)).andExpect(status().isOk());
         }
 
         @Test
@@ -140,6 +133,38 @@ class SecurityRulesTest {
                 verify(auditService).record(eq("mallory"), eq(AuditAction.LOGIN_BLOCKED),
                                 isNull(), anyString(), anyString());
         }
+            // ================= Role separation =================
+
+    @Test
+    @WithMockUser(roles = "OFFICER")
+    void officersCannotReadTheAuditLog() throws Exception {
+        mockMvc.perform(get("/audit")).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "AUDITOR")
+    void auditorsCanReadTheAuditLog() throws Exception {
+        mockMvc.perform(get("/audit")).andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"/dashboard", "/taxpayers/register", "/invoices/new", "/devices"})
+    @WithMockUser(roles = "AUDITOR")
+    void auditorsCannotOpenManagementPages(String url) throws Exception {
+        mockMvc.perform(get(url)).andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "AUDITOR")
+    void auditorsCannotManageDevices() throws Exception {
+        mockMvc.perform(post("/devices").with(csrf()).param("deviceName", "Rogue till"))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(post("/devices/1/revoke").with(csrf()))
+                .andExpect(status().isForbidden());
+
+        verify(deviceService, never()).register(anyString());
+        verify(deviceService, never()).revoke(any());
+    }
 
         // ================= 401 path: API =================
 

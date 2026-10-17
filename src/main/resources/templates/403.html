@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org" lang="en">
+
+<head th:replace="~{fragments :: head('Access denied')}"></head>
+
+<body>
+
+    <header th:replace="~{fragments :: header('')}"></header>
+
+    <main class="container narrow" id="main-content">
+        <div class="card empty-state">
+            <i class="bi bi-shield-lock" aria-hidden="true"></i>
+            <h2>Access denied</h2>
+            <p>Your account does not have permission to open this page, or your session has expired.</p>
+            <p><a th:href="@{/}">Go to your home page</a></p>
+        </div>
+    </main>
+
+    <footer th:replace="~{fragments :: footer}"></footer>
+</body>
+
+</html>

@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: kra_sim_db
+      POSTGRES_USER: kra
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD in .env}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    ports:
+      - "127.0.0.1:5433:5432"     # optional: inspect the DB from the host on port 5433
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kra -d kra_sim_db"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  app:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/kra_sim_db
+      SPRING_DATASOURCE_USERNAME: kra
+      DB_PASSWORD: ${DB_PASSWORD}
+      SPRING_THYMELEAF_CACHE: "true"
+      OFFICER_USERNAME: ${OFFICER_USERNAME:-officer}
+      OFFICER_PASSWORD: ${OFFICER_PASSWORD:?Set OFFICER_PASSWORD in .env}
+      AUDITOR_USERNAME: ${AUDITOR_USERNAME:-auditor}
+      AUDITOR_PASSWORD: ${AUDITOR_PASSWORD:?Set AUDITOR_PASSWORD in .env}
+    ports:
+      - "8080:8080"
+    restart: unless-stopped
+
+volumes:
+  pgdata:

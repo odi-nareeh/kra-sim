@@ -21,7 +21,7 @@ public class OfficerUserDetailsService implements UserDetailsService {
         return officerRepository.findByUsername(username)
                 .map(officer -> User.withUsername(officer.getUsername())
                         .password(officer.getPasswordHash())
-                        .roles("OFFICER")
+                        .roles(officer.getRole().name())
                         .disabled(!officer.isEnabled())
                         .build())
                 .orElseThrow(() -> new UsernameNotFoundException("Officer not found"));
